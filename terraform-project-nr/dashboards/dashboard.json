@@ -1,0 +1,263 @@
+{
+  "name": "Bookstack Information",
+  "description": null,
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Metric",
+      "description": null,
+      "widgets": [
+        {
+          "title": "CPU usage (%)",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "legend": {
+              "enabled": false
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT average(cpuPercent) AS `CPU used %` FROM SystemSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') TIMESERIES AUTO"
+              }
+            ],
+            "yAxisLeft": {
+              "max": 100,
+              "min": 0,
+              "zero": null
+            }
+          }
+        },
+        {
+          "title": "Memory usage (%)",
+          "layout": {
+            "column": 5,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "legend": {
+              "enabled": false
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT average(memoryUsedPercent) AS `Memory used %` FROM SystemSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') TIMESERIES AUTO"
+              }
+            ],
+            "yAxisLeft": {
+              "max": 100,
+              "min": 0,
+              "zero": null
+            }
+          }
+        },
+        {
+          "title": "Storage usage (%)",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "legend": {
+              "enabled": false
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT average(diskUsedPercent) AS `Storage used %` FROM StorageSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') TIMESERIES AUTO"
+              }
+            ],
+            "yAxisLeft": {
+              "max": 100,
+              "min": 0,
+              "zero": null
+            }
+          }
+        },
+        {
+          "title": "Network traffic",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 8,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "actions": {
+              "point": {
+                "logs": {
+                  "enabled": true,
+                  "entityGuid": "NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2"
+                }
+              }
+            },
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT average(transmitBytesPerSecond) AS `Transmit bytes per second`, average(receiveBytesPerSecond) AS `Receive bytes per second` FROM NetworkSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') TIMESERIES AUTO"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Disk usage",
+          "layout": {
+            "column": 9,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT latest(diskUsedPercent) AS `Used %` FROM StorageSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') FACET device LIMIT MAX"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Load average",
+          "layout": {
+            "column": 1,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT average(loadAverageOneMinute) AS `1 minute`, average(loadAverageFiveMinute) AS `5 minutes`, average(loadAverageFifteenMinute) AS `15 minutes` FROM SystemSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') TIMESERIES AUTO"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Processes running",
+          "layout": {
+            "column": 7,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "config": {
+              "bisect": {
+                "position": null
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountId": "6807300",
+                "events": {
+                  "agent_ids": [
+                    "4970602392104472136"
+                  ]
+                },
+                "query": "SELECT latest(cpuPercent) AS `CPU %`, latest(threadCount) AS `Threads` FROM ProcessSample WHERE (entityGuid = 'NjgwNzMwMHxJTkZSQXxOQXw0OTcwNjAyMzkyMTA0NDcyMTM2') FACET processId, processDisplayName LIMIT 100"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variables": []
+}

@@ -1,4 +1,4 @@
 provider "aws" {
-  profile = var.sso_profile
-  region  = var.aws_region
+  profile = "ATG_Common_Sandbox"
+  region  = "eu-west-1"
 }
