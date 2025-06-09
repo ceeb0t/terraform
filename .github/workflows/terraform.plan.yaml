@@ -1,0 +1,348 @@
+# * Reusable workflow used to run Terraform Plan (classic - for terraform-only projects/mostly infra related, no Lambda, ECS, etc.).
+name: Terraform.Plan(classic)
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        required: true
+        type: string
+        description: AWS region to deploy to.
+      aws_account_name:
+        required: true
+        type: string
+        description: Name of the AWS account/environment to deploy to (standarized).
+      aws_account_id:
+        required: true
+        type: string
+        description: AWS Account ID to deploy to.
+      custom_env_suffix:
+        required: false
+        default: ""
+        type: string
+        description: Custom suffix for environment name.
+      tf_vars_file:
+        required: false
+        type: string
+        description: File which contains values for terraform variables. Relative to tf_folder.
+      tf_folder:
+        required: false
+        default: terraform
+        type: string
+        description: Folder which contains terraform source code.
+      tf_version:
+        required: true
+        type: string
+        description: Terraform version.
+      tf_state_bucket:
+        required: true
+        type: string
+        description: Name of AWS S3 state bucket for terraform.
+      tf_state_dynamodb_lock:
+        required: true
+        type: string
+        description: Name of AWS DynamoDB table for state locks.
+      main_deploy_role:
+        required: true
+        type: string
+        description: Deployment role (assumed) used by github self-hosted runners to deploy.
+      tf_custom_state_prefix:
+        required: false
+        default: ""
+        type: string
+        description: Custom prefix for terraform s3 state.
+      tf_custom_plan_prefix:
+        required: false
+        default: ""
+        type: string
+        description: Custom prefix for terraform plan output.
+      tf_s3_output_bucket_role_arn:
+        required: false
+        default: ""
+        type: string
+        description: |
+          ARN of custom role for S3 output bucket. If not provided, default role will be used.
+          This role is used to upload terraform plan output to S3 bucket. This is useful when you want to use s3 bucket in different AWS account.
+          Note that this will only work when using only OIDC roles (also in main_deploy_role var). This is because we are not chaining roles, so if you use non-oidc roles you will most likely get access denied.
+      skip_workflow:
+        required: false
+        default: false
+        type: boolean
+        description: Whether workflow execution should be skipped completely.
+      checkout_ref:
+        required: false
+        default: ""
+        type: string
+        description: Ref for actions/checkout (Use only when you know what you're doing).
+      app_github_id:
+        required: true
+        type: string
+        description: Platform GitHub App ID of AutomationServiceToken.
+      app_github_installation_id:
+        required: true
+        type: string
+        description: Platform GitHub App Installation ID of AutomationServiceToken.
+      jf_username:
+        required: true
+        type: string
+        description: JFrog SaaS username.
+      tf_extra_vars:
+        required: false
+        type: string
+        description: Extra variables that can be passed to terraform plan command.
+      artifact_name:
+        required: false
+        type: string
+        description: Extra artifact name created by actions/upload-artifact action
+      artifact_path:
+        required: false
+        type: string
+        description: Artifact path created by actions/upload-artifact action
+      runner_group_name:
+        required: false
+        default: k8s-runners-global-prod
+        type: string
+        description: Name of the runner group to run the job on.
+    secrets:
+      tf_extra_secrets:
+        required: false
+        description: Extra secrets that can be passed to terraform plan command.
+      app_github_private_key:
+        required: true
+        description: Private key of the Github AutomationServiceToken App.
+      jf_reference_token:
+        required: true
+        description: JFrog SaaS reference token.
+    outputs:
+      plan_outcome:
+        value: ${{ jobs.plan.outputs.plan_outcome }}
+        description: Check if apply needs to be executed.
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+env:
+  DEPLOY_ROLE: arn:aws:iam::${{ inputs.aws_account_id }}:role/${{ inputs.main_deploy_role }}
+
+jobs:
+  plan:
+    name: Terraform.Plan
+    if: inputs.skip_workflow == false
+    concurrency:
+      group: ${{ inputs.tf_custom_state_prefix}}${{ inputs.aws_account_name }}-${{ inputs.aws_region }}
+      cancel-in-progress: false
+    environment: ${{ inputs.aws_account_name }}${{ inputs.custom_env_suffix }}-${{ inputs.aws_region }}-plan
+    runs-on:
+      group: ${{ inputs.runner_group_name }}
+    container:
+      image: keyloop.jfrog.io/platform-docker-virtual/cloud-engineering/terraform:1.6.0
+      credentials:
+        username: ${{ inputs.jf_username }}
+        password: ${{ secrets.jf_reference_token }}
+      env:
+        AWS_ROLE_ARN: ${{ env.AWS_ROLE_ARN }}
+        AWS_WEB_IDENTITY_TOKEN_FILE: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
+        TF_VERSION: ${{ inputs.tf_version }}
+      volumes:
+        - /var/run/secrets/eks.amazonaws.com/serviceaccount:/var/run/secrets/eks.amazonaws.com/serviceaccount
+    outputs:
+      plan_outcome: ${{ steps.check-plan.outputs.plan_outcome }}
+    steps:
+      - name: GitHub context summary
+        continue-on-error: true
+        uses: keyloop-platform/cloud-engineering-workflows/.github/actions/generate-github-context-summary@v5.14.0 # x-release-please-version
+      - name: Additional context summary
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "AWS Region: ${{ inputs.aws_region }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "AWS Account: ${{ inputs.aws_account_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "AWS IAM Role: ${{ env.DEPLOY_ROLE }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Variables: ${{ inputs.tf_vars_file }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Skip workflow: ${{ inputs.skip_workflow }}"  >> "$GITHUB_STEP_SUMMARY"
+      - name: Generate GitHub App Token
+        uses: keyloop-platform/cloud-engineering-workflows/.github/actions/generate-github-app-token@v5.14.0 # x-release-please-version
+        with:
+          app_github_id: ${{ inputs.app_github_id }}
+          app_github_installation_id: ${{ inputs.app_github_installation_id }}
+          app_github_private_key: ${{ secrets.app_github_private_key }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref }}
+      - name: Get OIDC Token
+        uses: keyloop-platform/cloud-engineering-workflows/.github/actions/generate-github-web-identity-token-file@v5.14.0 # x-release-please-version
+        id: get-oidc-token
+      - name: Assume custom oidc role for S3 output bucket
+        if: inputs.tf_s3_output_bucket_role_arn != ''
+        id: s3-output-bucket-role
+        uses: keyloop-platform/cloud-engineering-workflows/.github/actions/generate-aws-credentials@v5.14.0 # x-release-please-version
+        with:
+          deploy_role: ${{ inputs.tf_s3_output_bucket_role_arn }}
+      - name: Configure AWS Credentials
+        uses: keyloop-platform/cloud-engineering-workflows/.github/actions/generate-aws-credentials@v5.14.0 # x-release-please-version
+        with:
+          deploy_role: ${{ env.DEPLOY_ROLE }}
+      - name: Download artifact
+        if: inputs.artifact_name && inputs.artifact_path
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+      - name: Terraform Setup
+        shell: bash
+        run: |-
+          tfswitch ${{ inputs.tf_version }}
+      - name: Terraform Initialize
+        env:
+          AWS_REGION: ${{ inputs.aws_region }}
+          AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
+          AWS_WEB_IDENTITY_TOKEN_FILE: ${{ steps.get-oidc-token.outputs.web_identity_token_file }}
+        shell: bash
+        run: |-
+          terraform -v
+          if [ -z "${{ inputs.tf_custom_state_prefix }}" ]
+          then
+            cd ${{ inputs.tf_folder }}
+            terraform init -backend-config=bucket=${{ inputs.tf_state_bucket }} \
+            -backend-config=key="$GITHUB_REPOSITORY/${{ env.AWS_REGION }}/terraform.tfstate" \
+            -backend-config=dynamodb_table=${{ inputs.tf_state_dynamodb_lock }} \
+            -backend-config=region=eu-west-1
+          else
+            cd ${{ inputs.tf_folder }}
+            terraform init -backend-config=bucket=${{ inputs.tf_state_bucket }} \
+            -backend-config=key="$GITHUB_REPOSITORY/${{ inputs.tf_custom_state_prefix }}/${{ env.AWS_REGION }}/terraform.tfstate" \
+            -backend-config=dynamodb_table=${{ inputs.tf_state_dynamodb_lock }} \
+            -backend-config=region=eu-west-1
+          fi
+      - name: Terraform Validate
+        shell: bash
+        run: |
+          cd ${{ inputs.tf_folder }}
+          terraform validate -json
+      - name: Terraform Plan
+        env:
+          AWS_REGION: ${{ inputs.aws_region }}
+          AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
+          AWS_WEB_IDENTITY_TOKEN_FILE: ${{ steps.get-oidc-token.outputs.web_identity_token_file }}
+        shell: bash
+        id: terraform-plan
+        run: |
+          cd ${{ inputs.tf_folder }}
+
+          export TF_VAR_deployment_role="${{ env.DEPLOY_ROLE }}"
+          export TF_VAR_web_identity_token_file="${{ steps.get-oidc-token.outputs.web_identity_token_file }}"
+
+          if [ -z "${{ inputs.tf_vars_file }}" ]
+          then
+            terraform plan \
+            -input=false \
+            ${{ inputs.tf_extra_vars }} ${{ secrets.tf_extra_secrets }} \
+            -out output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.plan
+          else
+            terraform plan \
+            -input=false \
+            -var-file='${{ inputs.tf_vars_file }}' ${{ inputs.tf_extra_vars }} ${{ secrets.tf_extra_secrets }} \
+            -out output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.plan
+          fi
+          terraform show -no-color output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.plan > output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt
+      - name: Check plan output
+        id: check-plan
+        shell: bash
+        run: |
+          cd ${{ inputs.tf_folder }}
+          echo "plan_outcome=$(grep -E -q "Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy.|Changes to Outputs" output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt && echo "run_apply" || echo "skip_apply")" >> "$GITHUB_OUTPUT"
+      - name: Terraform Apply Needed
+        if: steps.check-plan.outputs.plan_outcome == 'run_apply'
+        shell: bash
+        run: |
+          echo "Changes found in the plan output - Apply operation needs to be executed!" >> "$GITHUB_STEP_SUMMARY"
+      - name: Terraform Apply NOT Needed
+        if: steps.check-plan.outputs.plan_outcome == 'skip_apply'
+        shell: bash
+        run: |
+          echo "No need to run apply operation. Plan is clean. Skipping next step" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Terrafrom Plan to S3
+        if: steps.check-plan.outputs.plan_outcome == 'run_apply'
+        shell: bash
+        run: |
+          # if tf_s3_output_bucket_role_arn is set then export AWS_SESSION_TOKEN, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, otherwise use default credentials
+          if [[ ! -z "${{ inputs.tf_s3_output_bucket_role_arn }}" ]]
+          then
+            echo "Using custom role for S3 output bucket" >> "$GITHUB_STEP_SUMMARY"
+            export AWS_SESSION_TOKEN=${{ steps.s3-output-bucket-role.outputs.aws-session-token }}
+            export AWS_ACCESS_KEY_ID=${{ steps.s3-output-bucket-role.outputs.aws-access-key-id }}
+            export AWS_SECRET_ACCESS_KEY=${{ steps.s3-output-bucket-role.outputs.aws-secret-access-key }}
+          fi
+          echo "Terraform Plan will be saved under s3://${{ inputs.tf_state_bucket }}-plan-output/${{ inputs.aws_region }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.plan and s3://${{ inputs.tf_state_bucket }}-plan-output/${{ inputs.aws_region }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt"
+          aws s3 cp ${{ inputs.tf_folder }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.plan s3://${{ inputs.tf_state_bucket }}-plan-output/${{ inputs.aws_region }}/
+          aws s3 cp ${{ inputs.tf_folder }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt s3://${{ inputs.tf_state_bucket }}-plan-output/${{ inputs.aws_region }}/
+      - name: Create PR message
+        id: comment
+        uses: actions/github-script@v7
+        if: always() && github.event_name == 'pull_request'
+        with:
+          result-encoding: string
+          script: |-
+            const fs = require('fs')
+            let output
+            let custom_message
+            const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+            const run_link = '<a href="' + run_url + '">Click here to access workflow URL.</a>'
+            let plan
+            let details
+            let detailsClose
+            if (fs.existsSync('${{ inputs.tf_folder }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt')) {
+              if ('${{ steps.check-plan.outputs.plan_outcome }}'  == 'skip_apply' ) {
+                plan = 'No changes found in the plan output. Skipping apply operation.'
+                details = ''
+                detailsClose = ''
+                custom_message = run_link
+              }
+              else {
+                const plan_file = fs.readFileSync('${{ inputs.tf_folder }}/output-${{ inputs.tf_custom_plan_prefix }}${{ github.run_id }}.txt', 'utf8')
+                plan = plan_file.length > 65000 ? plan_file.toString().substring(0, 65000) + ' ...' : plan_file
+                custom_message = plan_file.length > 65000 ? 'Output is too long and was truncated. You can read full Plan in ' + run_link + '<br /><br />' : run_link
+                details = '<details>'
+                detailsClose = '</details>'
+              }
+              output = `
+              #### Terraform Plan Outcome: ${{ steps.terraform-plan.outcome == 'success' && ':heavy_check_mark: SUCCESS!' || ':x: FAILURE!' }}
+              **Environment:** :earth_africa: \`${{ inputs.aws_account_name }}${{ inputs.custom_env_suffix }}-${{ inputs.aws_region }}\`
+              **Workflow**: \`${{ github.workflow }}\`
+              **Run number**: \`${{ github.run_number }}\`
+              **Pusher**: @${{ github.actor }}
+              **GitHub action**: \`${{ github.event_name }}\`
+              **Apply needed**: ${{ steps.check-plan.outputs.plan_outcome == 'run_apply' && ':white_check_mark: YES' || ':x: NO' }}
+
+              ${details}<summary>Plan output</summary>
+
+              \`\`\`terraform
+              ${ plan }
+              \`\`\`
+
+              ${detailsClose}
+              ${custom_message}
+              `;
+            } else {
+              output = `
+              #### Terraform Plan Outcome: ${{ steps.terraform-plan.outcome == 'success' && ':heavy_check_mark: SUCCESS!' || ':x: FAILURE!' }}
+              **Environment:** :earth_africa: \`${{ inputs.aws_account_name }}${{ inputs.custom_env_suffix }}-${{ inputs.aws_region }}\`
+              **Workflow**: \`${{ github.workflow }}\`
+              **Run number**: \`${{ github.run_number }}\`
+              **Pusher**: @${{ github.actor }}
+              **GitHub action**: \`${{ github.event_name }}\`
+              :collision: Workflow failed before or on terraform plan step. Please check logs for more details.
+              ${run_link}
+              `;
+            }
+
+            return output
+      - name: Create Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && github.event_name == 'pull_request'
+        with:
+          header: ${{ inputs.aws_account_name }}${{ inputs.custom_env_suffix }}-${{ inputs.aws_region }}-${inputs.tf_folder}-${inputs.tf_vars_file}-${inputs.tf_custom_plan_prefix}-${inputs.tf_custom_state_prefix}-terraform-plan
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
+          message: ${{ steps.comment.outputs.result }}
