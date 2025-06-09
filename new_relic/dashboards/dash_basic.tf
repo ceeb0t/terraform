@@ -1,5 +1,5 @@
 resource "newrelic_one_dashboard_json" "basic_dashboards" {
-     json = file("${path.module}/dashboards/dashboard.json")
+     json = file("${path.module}/dashboard.json")
 }
 
 resource "newrelic_entity_tags" "basic_dashboards" {
