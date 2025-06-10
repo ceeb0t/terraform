@@ -8,5 +8,5 @@ terraform {
 }
 
 provider "newrelic" {
-  account_id = 6807300
+  account_id = var.newrelic_account_id
 }
