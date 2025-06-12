@@ -1,10 +1,10 @@
 # Read all JSON files in the dashboards folder
 locals {
-  dashboard_files = fileset("${path.module}/dashboards", "*.json")
+  dashboard_files = fileset("${path.module}/", "*.json")
   dashboards = [
     for file in local.dashboard_files : {
       name     = trimsuffix(file, ".json")
-      content  = file("${path.module}/dashboards/${file}")
+      content  = file("${path.module}/${file}")
     }
   ]
 }
