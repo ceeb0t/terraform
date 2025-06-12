@@ -1,6 +1,6 @@
-resource "newrelic_workflow" "workflow" {
+resource "newrelic_workflow" "default_alerting_workflow" {
   account_id = var.newrelic_account_id
-  name = "Alerting Policy"
+  name = "Default Alerting Worflow"
   enabled = true
   muting_rules_handling = "DONT_NOTIFY_FULLY_MUTED_ISSUES"
 
