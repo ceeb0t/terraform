@@ -37,4 +37,27 @@ resource "newrelic_nrql_alert_condition" "low_disk_space" {
     }
   }
 
+resource "newrelic_nrql_alert_condition" "cpu_test" {
+  account_id = 6807300
+  policy_id = 1588025
+  type = "static"
+  name = "CPU Test"
+  enabled = true
+  violation_time_limit_seconds = 259200
 
+  nrql {
+    query = "SELECT average(`cpuSystemPercent`) FROM SystemSample FACET entityName"
+    data_account_id = 6807300
+  }
+
+  critical {
+    operator = "above"
+    threshold = 1
+    threshold_duration = 300
+    threshold_occurrences = "all"
+  }
+  fill_option = "none"
+  aggregation_window = 60
+  aggregation_method = "event_flow"
+  aggregation_delay = 120
+}
