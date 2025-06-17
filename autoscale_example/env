@@ -1,0 +1,2 @@
+export AWS_PROFILE=ATG_Common_Sandbox
+aws sso login --sso-session my-sso

@@ -1,10 +1,5 @@
 {
-  "name": "Linux",
-  "description": null,
-  "permissions": "PUBLIC_READ_WRITE",
-  "pages": [
-    {
-      "name": "Linux",
+      "name": "Linux 2",
       "description": null,
       "widgets": [
         {
@@ -216,12 +211,3 @@
         }
       ]
     },
-  
-    {
-      "name": "fsd",
-      "description": null,
-      "widgets": []
-    }
-  ],
-  "variables": []
-}
