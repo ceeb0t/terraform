@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CFT158V002 Run container to allow users to access EFS filesystem via SFTP
+  # V001 - Copied from CFT158V004
+  # V002 - Changes made to run container etc
+  # V003 - Adding autocaling schedule to refresh instance capacity weekly
+Parameters:
+  ASGName:
+    Type: String
+    Description: ASG Name
+    Default: "example-asg"
+Resources:
+  WordpressEFSSFTPScaleDown:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref ASGName
+      ScheduledActionName: ScaleDownSunday
+      MinSize: 0
+      MaxSize: 0
+      DesiredCapacity: 0
+      Recurrence: '0 3 * * 0'   # 3:00 AM Sunday 
+  WordpressEFSSFTPScaleUp:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref ASGName
+      ScheduledActionName: ScaleUpSunday
+      MinSize: 1
+      MaxSize: 2
+      DesiredCapacity: 1
+      Recurrence: '10 3 * * 0'  # 3:10 AM Sunday 
