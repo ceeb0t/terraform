@@ -1,0 +1,1219 @@
+{
+  "name": "${intComp_core_applicationId} - Default Dashboard",
+  "description": null,
+  "permissions": "PUBLIC_READ_ONLY",
+  "pages": [
+    {
+      "name": "APM",
+      "description": null,
+      "widgets": [
+        {
+          "title": "Transactions time",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "colors": {
+              "seriesOverrides": [
+                {
+                  "color": "#d3a912",
+                  "seriesName": "Web external"
+                }
+              ]
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT filter(average(apm.service.overview.web * 1000), WHERE segmentName like 'Node.js') as 'Node.js',filter(average(apm.service.overview.web * 1000), WHERE segmentName like '.NET') as '.NET',filter(average(apm.service.overview.web * 1000), WHERE segmentName like 'Web external') as 'Web external',filter(average(apm.service.overview.other * 1000), WHERE segmentName like '.NET') as '.NET Other',filter(average(apm.service.overview.other * 1000), WHERE segmentName like 'Background external') as 'Background external' FROM Metric  WHERE appName={{ appName }} LIMIT MAX TIMESERIES AUTO"
+              },
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT average(apm.service.transaction.duration * 1000) AS 'Other Response time' FROM Metric WHERE tags.intComp.core.fullApplicationName = {{ appName }} AND transactionType = 'Other' LIMIT MAX TIMESERIES AUTO"
+              },
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT average(apm.service.transaction.duration * 1000) AS 'Web Response time' FROM Metric WHERE tags.intComp.core.fullApplicationName = {{ appName }} AND transactionType = 'Web' LIMIT MAX TIMESERIES AUTO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "units": {
+              "unit": "MS"
+            }
+          }
+        },
+        {
+          "title": "Apdex score",
+          "layout": {
+            "column": 7,
+            "row": 1,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT apdex(apm.service.apdex) as 'App server', apdex(apm.service.apdex.user) as 'End user' FROM Metric WHERE appName={{ appName }} LIMIT MAX TIMESERIES AUTO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Throughput - Per minute",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT rate(count(apm.service.transaction.duration), 1 minute) as 'Web throughput' FROM Metric WHERE appName={{ appName }} AND transactionType = 'Web' LIMIT MAX TIMESERIES AUTO"
+              },
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT rate(count(apm.service.transaction.duration), 1 minute) as 'Non - Web throughput' FROM Metric WHERE appName = {{ appName }} AND (transactionType = 'Other' AND subtype = 'Custom') LIMIT MAX TIMESERIES AUTO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Error rate",
+          "layout": {
+            "column": 7,
+            "row": 4,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(apm.service.error.count['count']) / count(apm.service.transaction.duration) AS 'Web errors' FROM Metric WHERE appName={{ appName }} AND (transactionType = 'Web') LIMIT MAX TIMESERIES AUTO"
+              },
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(apm.service.error.count['count']) / count(apm.service.transaction.duration) AS 'All errors' FROM Metric WHERE appName = {{ appName }}LIMIT MAX TIMESERIES AUTO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "PERCENTAGE"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Transactions",
+          "layout": {
+            "column": 1,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT count(*) from Transaction where appName={{ appName }} FACET name TIMESERIES  AUTO "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Logs",
+          "layout": {
+            "column": 7,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT count(*) FROM Log WHERE entity.name={{ appName }} LIMIT MAX TIMESERIES AUTO FACET level"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Slowest transactions over time",
+          "layout": {
+            "column": 1,
+            "row": 10,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT average(apm.service.external.host.duration * 1000 ) FROM Metric WHERE (appName = {{ appName }}) FACET `external.host` LIMIT MAX TIMESERIES since 1 day ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Top transaction errors",
+          "layout": {
+            "column": 7,
+            "row": 10,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT count(*) FROM Log FACET `message` WHERE `labels.intComp.core.fullApplicationName` = {{ appName }} AND (level = 'Error' OR string(status) like '4%' or string(status) like '5%') SINCE 1 week ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Latest trace errors",
+          "layout": {
+            "column": 1,
+            "row": 13,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM ErrorTrace WHERE appName = {{ appName }} SINCE 1 week ago LIMIT 20"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Latest errors",
+          "layout": {
+            "column": 7,
+            "row": 13,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "logger.log-table-widget"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM Log WHERE `labels.intComp.core.fullApplicationName` = {{ appName }} AND (level = 'Error' OR string(status) like '4%' OR string(status) like '5%') SINCE 1 week ago LIMIT 20"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Deployments",
+          "layout": {
+            "column": 1,
+            "row": 16,
+            "width": 12,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "select * from Deployment where entity.name = {{ appName }} since 14 days ago "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "description": null,
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 12,
+            "height": 8
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "logger.log-table-widget"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM Log WHERE `labels.intComp.core.fullApplicationName` = {{ appName }} LIMIT MAX"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Distributed Tracing",
+      "description": null,
+      "widgets": [
+        {
+          "title": "Trace",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 12,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "initialSorting": {
+              "direction": "asc"
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM Transaction WHERE (length({{ traceId }}) > 0 AND traceId = {{ traceId }}) OR (length({{ traceId }}) = 0 AND appName = {{ appName }} AND traceId IS NOT NULL) SINCE 7 days AGO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Spans for trace",
+          "layout": {
+            "column": 1,
+            "row": 3,
+            "width": 12,
+            "height": 5
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM Span WHERE (length({{ traceId }}) > 0 AND traceId = {{ traceId }}) OR (length({{ traceId }}) = 0 AND appName = {{ appName }} AND traceId IS NOT NULL) SINCE 7 days AGO ORDER BY Timestamp ASC LIMIT 2000"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Logs for trace",
+          "layout": {
+            "column": 1,
+            "row": 8,
+            "width": 12,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "logger.log-table-widget"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT * FROM Log WHERE (length({{ traceId }}) > 0 AND trace.id = {{ traceId }}) OR (length({{ traceId }}) = 0 AND trace.id IS NOT NULL AND `labels.intComp.core.fullApplicationName` = {{ appName }}) SINCE 7 days AGO"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Infra",
+      "description": null,
+      "widgets": [
+        {
+          "title": "CPU",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 2,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(cpureq) AS 'CPU Cores Req', sum(cpuu) AS 'CPU Cores Used', (sum(cpuu) / sum(cpureq) * 100) AS '% Request Used', count(cpureq) AS 'Calculated for Pods Number' from (FROM K8sContainerSample SELECT latest(cpuRequestedCores) AS 'cpureq', latest(cpuUsedCores) AS 'cpuu'  WHERE `label.intComp.core.fullApplicationName` = {{ appName }} FACET containerID) since 5 minutes ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            }
+          }
+        },
+        {
+          "title": "Namespace CPU",
+          "layout": {
+            "column": 3,
+            "row": 1,
+            "width": 2,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "select sum(cpureq) AS 'CPU Cores Reqested', sum(cpuu) AS 'CPU Cores Used', (sum(cpuu) / sum(cpureq) * 100) AS '% Request Used' from (FROM K8sContainerSample SELECT latest(cpuRequestedCores) AS 'cpureq', latest(cpuUsedCores) AS 'cpuu' WHERE (clusterName IN (SELECT uniques(clusterName) from K8sContainerSample  WHERE `label.intComp.core.fullApplicationName` = {{ appName }} AND (namespaceName IN (SELECT uniques(namespace) from K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }})) OR namespace IN (SELECT uniques(namespace) from K8sContainerSample  WHERE `label.intComp.core.fullApplicationName` = {{ appName }}))) FACET containerID) SINCE 5 minutes AGO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            }
+          }
+        },
+        {
+          "title": "CPU usage over time",
+          "layout": {
+            "column": 5,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(cpuu) AS 'CPU Cores Used' FROM (FROM K8sContainerSample SELECT latest(cpuUsedCores) AS 'cpuu' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName TIMESERIES auto) FACET podName since 300 minutes ago UNTIL now TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "CPU request used",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT (sum(cpuu) / sum(cpureq) ) AS '% Request Used' FROM (FROM K8sContainerSample SELECT latest(cpuRequestedCores) AS 'cpureq', latest(cpuUsedCores) AS 'cpuu' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName TIMESERIES auto) FACET podName SINCE 300 minutes AGO UNTIL now TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "PERCENTAGE"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Memory",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 2,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(memreq) AS 'Memory Reqest (MiB)', sum(memu) AS 'Memory Used (MiB)', (sum(memu) / sum(memreq) * 100) AS '% Request Used', sum(meml) as 'Memory Limit (MiB)' , count(memreq) AS 'Calculated for Pods Number' FROM (FROM K8sContainerSample SELECT latest(memoryRequestedBytes) AS 'memreq', latest(memoryUsedBytes) AS 'memu', latest(memoryLimitBytes) AS 'meml' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} FACET containerID) SINCE 5 minutes AGO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            }
+          }
+        },
+        {
+          "title": "Namespace Memory",
+          "layout": {
+            "column": 3,
+            "row": 4,
+            "width": 2,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(memreq) AS 'Memory Reqest', sum(memu) AS 'Memory Used', (sum(memu) / sum(memreq) * 100) AS '% Request Used' FROM (FROM K8sContainerSample SELECT latest(memoryRequestedBytes) AS 'memreq', latest(memoryUsedBytes) AS 'memu' WHERE (clusterName IN (SELECT uniques(clusterName) FROM K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }})) AND (namespaceName IN (SELECT uniques(namespace) FROM K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }}) OR namespace IN (SELECT uniques(namespace) FROM K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }})) FACET containerID) SINCE 5 minutes AGO"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            }
+          }
+        },
+        {
+          "title": "Memory usage over time",
+          "layout": {
+            "column": 5,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT sum(memu) AS 'Memory Used' FROM (FROM K8sContainerSample SELECT latest(memoryUsedBytes) AS 'memu' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName TIMESERIES auto) FACET podName SINCE 5 hours AGO UNTIL now TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "BYTES"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Memory request used",
+          "layout": {
+            "column": 9,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT (sum(memu) / sum(memreq)) AS '% Request Used' FROM (FROM K8sContainerSample SELECT latest(memoryRequestedBytes) AS 'memreq', latest(memoryUsedBytes)  AS 'memu' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName TIMESERIES auto) FACET podName SINCE 5 hours AGO UNTIL now TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "PERCENTAGE"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Throttled time percent",
+          "layout": {
+            "column": 1,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "FROM K8sContainerSample SELECT (latest(containerCpuCfsThrottledPeriodsTotal)/latest(containerCpuCfsPeriodsTotal)) AS 'percentage of throttled periods' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName since 2 day ago UNTIL now TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "PERCENTAGE"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Total time throttled",
+          "layout": {
+            "column": 7,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "FROM K8sContainerSample SELECT latest(containerCpuCfsThrottledSecondsTotal) AS 'Total Time Throttled (seconds)' WHERE `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} FACET podName TIMESERIES auto"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "units": {
+              "unit": "SECONDS"
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Pods quantity over time",
+          "layout": {
+            "column": 1,
+            "row": 10,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT uniqueCount(podName) AS 'Pod Count' FROM K8sContainerSample WHERE status = 'Running' AND `label.intComp.core.fullApplicationName` = {{ appName }} OR appName = {{ appName }} SINCE 1 week ago TIMESERIES"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Pods restart monitor",
+          "layout": {
+            "column": 7,
+            "row": 10,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT latest(restartCount) AS 'Pod Restarts' FROM K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }} SINCE 1 hour ago FACET podName"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Application Abnormal Events",
+          "layout": {
+            "column": 1,
+            "row": 13,
+            "width": 12,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT timestamp,  event.involvedObject.name AS 'Object Name', event.message AS 'Message', event.involvedObject.namespace AS 'Namespace Name', clusterName AS 'Cluster', event.involvedObject.kind AS 'Kind', event.reason AS 'Event Reason' FROM InfrastructureEvent where event.metadata.namespace IN (SELECT uniques(namespace) from K8sContainerSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }}) and (event.involvedObject.name in (SELECT uniques(podName) FROM `K8sPodSample` WHERE `label.intComp.core.fullApplicationName` = {{ appName }} ) OR event.involvedObject.name in (SELECT uniques(replicasetName) FROM `K8sPodSample` WHERE `label.intComp.core.fullApplicationName` = {{ appName }})) AND event.type != 'Normal' SINCE 1 day ago LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Namespace Abnormal Events",
+          "layout": {
+            "column": 1,
+            "row": 16,
+            "width": 12,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  ${account_id}
+                ],
+                "query": "SELECT timestamp, event.involvedObject.name AS 'Object Name', event.message AS 'Message', event.involvedObject.namespace AS 'Namespace Name', clusterName AS 'Cluster', event.involvedObject.kind AS 'Kind', event.reason AS 'Event Reason' FROM InfrastructureEvent where event.involvedObject.kind IN ('Pod', 'Ingress', 'ExternalSecret') and event.type != 'Normal' and clusterName in (SELECT uniques(clusterName) FROM K8sPodSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }}) and event.involvedObject.namespace IN (SELECT uniques(namespace) FROM K8sPodSample WHERE `label.intComp.core.fullApplicationName` = {{ appName }} ) SINCE 1 day ago LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": [
+    {
+      "name": "appName",
+      "items": null,
+      "defaultValues": [
+        {
+          "value": {
+            "string": "CHOOSE APP"
+          }
+        }
+      ],
+      "nrqlQuery": {
+        "accountIds": [
+          ${account_id}
+        ],
+        "query": "FROM Transaction, Log SELECT uniques(concat(appName,labels.intComp.core.fullApplicationName)) as 'appName' WHERE `labels.intComp.core.applicationId` = '${intComp_core_applicationId}' OR `tags.intComp.core.applicationId` = '${intComp_core_applicationId}' AND concat(appName,labels.intComp.core.fullApplicationName) is not NULL SINCE 3 day ago"
+      },
+      "options": {
+        "ignoreTimeRange": true,
+        "excluded": false
+      },
+      "title": "Application Name",
+      "type": "NRQL",
+      "isMultiSelection": false,
+      "replacementStrategy": "STRING"
+    },
+    {
+      "name": "traceId",
+      "items": null,
+      "defaultValues": [],
+      "nrqlQuery": null,
+      "options": {},
+      "title": "Trace Id",
+      "type": "STRING",
+      "isMultiSelection": null,
+      "replacementStrategy": "STRING"
+    }
+  ]
+}
